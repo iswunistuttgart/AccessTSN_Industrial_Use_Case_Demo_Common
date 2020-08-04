@@ -79,7 +79,7 @@ struct __attribute__ ((__packed__)) mk_additionaloutput {
 };
 
 // struct of main variables which are read by machinekit
-struct __attribute__ ((__packed__)) mk_maininput (
+struct __attribute__ ((__packed__)) mk_maininput {
     double xpos_cur;	//actual x-Position; feedback from the drive
 	double ypos_cur;	//actual y-Position; feedback from the drive
 	double zpos_cur;	//actual z-Position; feedback from the drive
