@@ -67,6 +67,7 @@ struct __attribute__ ((__packed__)) mk_additionaloutput {
 	int32_t lineno;			//currently active program-line
 	int32_t uptime;			//uptime of machine 
 	uint32_t tool;			//number of current tool
+	uint8_t mode;           //Operationmode: 1 = auto, 2 = mdi, 4 = manual
 	bool xhome;				//Homeposition of x-axis, True if currently at home position
 	bool yhome;				//Homeposition of y-axis, True if currently at home position
 	bool zhome;				//Homeposition of z-axis, True if currently at home position
