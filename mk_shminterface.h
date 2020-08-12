@@ -35,6 +35,8 @@
 #define _MK_SHMINTERFACE_H_
 
 #include <linux/types.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 // Names of shared memories
 #define MK_MAINOUTKEY "MK_MAINOUT"
