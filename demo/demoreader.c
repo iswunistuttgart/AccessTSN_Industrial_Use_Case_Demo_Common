@@ -47,14 +47,12 @@ void* openShM(const char* name, uint32_t size)
         fd = shm_open(name, O_RDONLY | O_CREAT, 700);
         if (fd == -1) {
                 perror("SHM Open failed");
-                printf("SHM Open failed");
                 return(NULL);
         }
         ftruncate(fd,size);
         shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
         if (MAP_FAILED == shm) {
                 perror("SHM Map failed");
-                printf("SHM Map failed");
                 shm = NULL;
                 shm_unlink(name);
         }
@@ -139,10 +137,9 @@ int main(int argc, char* argv[])
         reader.flagaddout = false;
         reader.flagmainout = false;
         reader.flagmainin = false;
-        reader.period = 10000;
+        reader.period = 10000000;       // 10 seconds
         time_t now;
         struct tm now_local;
-        
 
         evalCLI(argc,argv,&reader);
 
