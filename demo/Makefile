@@ -13,18 +13,21 @@ LDIR=../lib
 
 LIBS=-lrt
 
-_OBJ = demoreader.o
+_OBJ = demoreader.o demowriter.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.c 
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-all: demoreader
+all: demoreader demowriter
 
 demoreader: obj/demoreader.o
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+demowriter: obj/demowriter.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ demoreader
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ demoreader demowriter
