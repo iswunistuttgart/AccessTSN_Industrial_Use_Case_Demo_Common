@@ -47,12 +47,14 @@ void* openShM(const char* name, uint32_t size)
         fd = shm_open(name, O_RDONLY | O_CREAT, 700);
         if (fd == -1) {
                 perror("SHM Open failed");
+                printf("SHM Open failed");
                 return(NULL);
         }
         ftruncate(fd,size);
         shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
         if (MAP_FAILED == shm) {
                 perror("SHM Map failed");
+                printf("SHM Map failed");
                 shm = NULL;
                 shm_unlink(name);
         }
@@ -125,7 +127,7 @@ void evalCLI(int argc, char* argv[0],struct demoreader_t * reader)
                 }
         }
         if (((*reader).flagmainout == false) && ((*reader).flagmainin == false) && ((*reader).flagaddout) == false) {
-                printf("At minium one block of vairables needs to be selected");
+                printf("At minium, one block of variables needs to be selected\n");
                 exit(0);
         };
 
