@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <semaphore.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
@@ -33,6 +34,9 @@ struct demowriter_t {
         struct mk_mainoutput * mainout;
         struct mk_maininput * mainin;
         struct mk_additionaloutput * addout;
+        sem_t* sem_mainout;
+        sem_t* sem_mainin;
+        sem_t* sem_addout;
         uint32_t period;
         bool flagmainout;
         bool flagmainin;
@@ -40,11 +44,11 @@ struct demowriter_t {
 };
 
 /* Opens a shared memory (write) and created it if necessary */
-void* openShM(const char* name, uint32_t size)
+void* openShM(const char* name, uint32_t size, sem_t** sem)
 {
         int fd;
         void* shm;
-        fd = shm_open(name, O_RDWR | O_CREAT, 700);
+        fd = shm_open(name, O_RDWR | O_CREAT, 0666);
         if (fd == -1) {
                 perror("SHM Open failed");
                 return(NULL);
@@ -56,13 +60,36 @@ void* openShM(const char* name, uint32_t size)
                 shm = NULL;
                 shm_unlink(name);
         }
+        *sem = sem_open(name,O_CREAT,0666,0);
+        if (*sem == SEM_FAILED) {
+                perror("Semaphore open failed");
+                munmap(shm, size);
+                shm_unlink(name);
+                return(NULL);
+        }
+        //initialize shared memory
+        memset(shm,0,size);
+        sem_post(*sem);
+        
         return shm;
 }
 
 /* Closes a shared memroy */
-void* closeShM(const char* name)
+int closeShM(const char* name,void** shm, int len,sem_t** sem)
 {
+        int ok;
+        ok = munmap(*shm,len);
+        if (ok < 0) {
+              return ok;  
+        }
+        *shm = NULL;
         shm_unlink(name);
+        ok = sem_close(*sem);
+        if (ok < 0)
+                return ok;
+        *sem = NULL;
+        ok =+ sem_unlink(name);
+        return ok;
 }
 
 /* signal handler */
@@ -151,17 +178,17 @@ int main(int argc, char* argv[])
 
         // open and setup shm mapping
         if (writer.flagmainout) {
-                writer.mainout = (struct mk_mainoutput *) openShM(MK_MAINOUTKEY,sizeof(struct mk_mainoutput));
+                writer.mainout = (struct mk_mainoutput *) openShM(MK_MAINOUTKEY,sizeof(struct mk_mainoutput),&writer.sem_mainout);
                 if (NULL == writer.mainout)
                         writer.flagmainout = false;
         }
         if (writer.flagmainin) {
-                writer.mainin = (struct mk_maininput *) openShM(MK_MAININKEY,sizeof(struct mk_maininput));
+                writer.mainin = (struct mk_maininput *) openShM(MK_MAININKEY,sizeof(struct mk_maininput),&writer.sem_mainin);
                 if (NULL == writer.mainin)
                         writer.flagmainin = false;
         }
         if (writer.flagaddout) {
-                writer.addout = (struct mk_additionaloutput *) openShM(MK_ADDAOUTKEY,sizeof(struct mk_additionaloutput));
+                writer.addout = (struct mk_additionaloutput *) openShM(MK_ADDAOUTKEY,sizeof(struct mk_additionaloutput),&writer.sem_addout);
                 if (NULL == writer.addout)
                         writer.flagaddout = false;
         }
@@ -174,6 +201,7 @@ int main(int argc, char* argv[])
                 now = time(NULL);
                 now_local = *localtime(&now);
                 if (writer.flagmainout){
+                        sem_wait(writer.sem_mainout);
                         printf("\n##### Main Output Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
                         writer.mainout->xvel_set = (double) (rand() * 0.000001);
                         writer.mainout->yvel_set = (double) (rand() * 0.000001);
@@ -189,9 +217,11 @@ int main(int argc, char* argv[])
                         writer.mainout->machinestatus = rand() > randhalf;
                         writer.mainout->estopstatus = rand() > randhalf;
                         printf("Spindlebranke engaged: %s;      Machine on: %s;                 Emergency Stop activated: %s\n",writer.mainout->spindlebrake ? "true" : "false",writer.mainout->machinestatus ? "true" : "false",writer.mainout->estopstatus ? "true" : "false");
+                        sem_post(writer.sem_mainout);
                 }
                 
                 if (writer.flagaddout){
+                        sem_wait(writer.sem_addout);
                         printf("\n##### Additional Output Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
                         writer.addout->xpos_set = (double) (rand() * 0.000001);
                         writer.addout->ypos_set = (double) (rand() * 0.000001);
@@ -216,8 +246,10 @@ int main(int argc, char* argv[])
                         writer.addout->tool = rand ();
                         writer.addout->mode = rand() %4 +1;
                         printf("Current Line Number: %d;         Uptime: %d;                     Tool Number: %d;                Mode: %d\n",writer.addout->lineno,writer.addout->uptime,writer.addout->tool,writer.addout->mode);
+                        sem_post(writer.sem_addout);
                 }
                 if (writer.flagmainin){
+                        sem_wait(writer.sem_mainin);
                         printf("\n##### Main Input Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
                         writer.mainin->xpos_cur = (double) (rand() * 0.000001);
                         writer.mainin->ypos_cur = (double) (rand() * 0.000001);
@@ -227,6 +259,7 @@ int main(int argc, char* argv[])
                         writer.mainin->yfault = rand() > randhalf;
                         writer.mainin->zfault = rand() > randhalf;
                         printf("X-Axis faulty: %s;              Y-Axis faulty: %s;             Z-Axis faulty: %s;\n",writer.mainin->xfault ? "true" : "false",writer.mainin->yfault ? "true" : "false",writer.mainin->zfault ? "true" : "false");
+                        sem_post(writer.sem_mainin);
                 }
                 
                 usleep(writer.period);
@@ -234,11 +267,11 @@ int main(int argc, char* argv[])
 
         // cleanup
         if (writer.flagmainout)
-                closeShM(MK_MAINOUTKEY);
+                closeShM(MK_MAINOUTKEY,(void**)&writer.mainout,sizeof(writer.mainout),&writer.sem_mainout);   
         if (writer.flagmainin)
-                closeShM(MK_MAININKEY);
+                closeShM(MK_MAININKEY,(void**)&writer.mainin,sizeof(writer.mainin),&writer.sem_mainin);
         if (writer.flagaddout)
-                closeShM(MK_ADDAOUTKEY);
+                closeShM(MK_ADDAOUTKEY,(void**)&writer.addout,sizeof(writer.addout),&writer.sem_addout);
 
         return 0;
 }

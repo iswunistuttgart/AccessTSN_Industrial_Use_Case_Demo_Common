@@ -24,15 +24,20 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <semaphore.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
+#include <errno.h>
 
 uint8_t run = 1;
 struct demoreader_t {
         struct mk_mainoutput * mainout;
         struct mk_maininput * mainin;
         struct mk_additionaloutput * addout;
+        sem_t* sem_mainout;
+        sem_t* sem_mainin;
+        sem_t* sem_addout;
         uint32_t period;
         bool flagmainout;
         bool flagmainin;
@@ -40,29 +45,64 @@ struct demoreader_t {
 };
 
 /* Opens a shared memory (Readonly) and created it if necessary */
-void* openShM(const char* name, uint32_t size)
+void* openShM(const char* name, uint32_t size, sem_t** sem)
 {
         int fd;
+        bool init = false;
+        int mpflg = PROT_READ;
         void* shm;
-        fd = shm_open(name, O_RDONLY | O_CREAT, 700);
+        int semflg = 0;
+        fd = shm_open(name, O_RDONLY, 0666);
+        if ((fd == -1) && (errno == ENOENT)){
+                //shm not available yet -> create and initialize
+                init = true;
+                fd = shm_open(name,O_RDWR | O_CREAT,0666);
+                mpflg = PROT_READ | PROT_WRITE;
+                semflg = O_CREAT;
+        }
         if (fd == -1) {
                 perror("SHM Open failed");
                 return(NULL);
         }
+        
         ftruncate(fd,size);
-        shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+        shm = mmap(NULL, size, mpflg, MAP_SHARED | MAP_POPULATE, fd, 0);
         if (MAP_FAILED == shm) {
                 perror("SHM Map failed");
                 shm = NULL;
-                shm_unlink(name);
+                if(init)
+                        shm_unlink(name);
         }
+        *sem = sem_open(name,semflg,0666,0);
+        if (*sem == SEM_FAILED){
+                perror("Semaphore open failed");
+                munmap(shm, size);
+                return(NULL);
+        }
+        if(init) {
+                memset(shm,0,size);
+                mprotect(shm,size,PROT_READ);
+                sem_post(*sem);
+        }
+        
         return shm;
 }
 
-/* Closes a shared memroy */
-void* closeShM(const char* name)
+/* Closes a shared memory */
+int closeShM(void** shm, int len, sem_t** sem)
 {
-        shm_unlink(name);
+        // not doing unlink of the shared memory because this should only be
+        // done by the writer, so other reader process can still open it
+        int ok;        
+        ok = munmap(*shm,len);
+        if (ok < 0)
+                return ok;
+        *shm = NULL;
+        ok = sem_close(*sem);
+        if (ok < 0)
+                return ok;
+        *sem = NULL;
+        return ok;
 }
 
 /* signal handler */
@@ -149,17 +189,17 @@ int main(int argc, char* argv[])
 
         // open and setup shm mapping
         if (reader.flagmainout) {
-                reader.mainout = (struct mk_mainoutput *) openShM(MK_MAINOUTKEY,sizeof(struct mk_mainoutput));
+                reader.mainout = (struct mk_mainoutput *) openShM(MK_MAINOUTKEY,sizeof(struct mk_mainoutput),&reader.sem_mainout);
                 if (NULL == reader.mainout)
                         reader.flagmainout = false;
         }
         if (reader.flagmainin) {
-                reader.mainin = (struct mk_maininput *) openShM(MK_MAININKEY,sizeof(struct mk_maininput));
+                reader.mainin = (struct mk_maininput *) openShM(MK_MAININKEY,sizeof(struct mk_maininput),&reader.sem_mainin);
                 if (NULL == reader.mainin)
                         reader.flagmainin = false;
         }
         if (reader.flagaddout) {
-                reader.addout = (struct mk_additionaloutput *) openShM(MK_ADDAOUTKEY,sizeof(struct mk_additionaloutput));
+                reader.addout = (struct mk_additionaloutput *) openShM(MK_ADDAOUTKEY,sizeof(struct mk_additionaloutput),&reader.sem_addout);
                 if (NULL == reader.addout)
                         reader.flagaddout = false;
         }
@@ -169,12 +209,16 @@ int main(int argc, char* argv[])
                 now = time(NULL);
                 now_local = *localtime(&now);
                 if (reader.flagmainout){
+                        sem_wait(reader.sem_mainout);
+                        sem_post(reader.sem_mainout);
                         printf("\n##### Main Output Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
                         printf("X-Velocity Setpoint: %f;        Y-Velocity Setpoint: %f;        Z-Velocity Setpoint: %f;        Spindlespeed Setpoint: %f\n",reader.mainout->xvel_set,reader.mainout->yvel_set,reader.mainout->zvel_set,reader.mainout->spindlespeed);
                         printf("X-Axis enabled: %s;             Y-Axis enabled: %s;             Z-Axis enabled: %s;             Spindle enabled: %s\n",reader.mainout->xenable ? "true" : "false",reader.mainout->yenable ? "true" : "false",reader.mainout->zenable ? "true" : "false",reader.mainout->spindleenable ? "true" : "false");
                         printf("Spindlebranke engaged: %s;      Machine on: %s;                 Emergency Stop activated: %s\n",reader.mainout->spindlebrake ? "true" : "false",reader.mainout->machinestatus ? "true" : "false",reader.mainout->estopstatus ? "true" : "false");
                 }
                 if (reader.flagaddout){
+                        sem_wait(reader.sem_addout);
+                        sem_post(reader.sem_addout);
                         printf("\n##### Additional Output Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
                         printf("X-Position Setpoint: %f;         Y-Position Setpoint: %f;        Z-Position Setpoint: %f;        Feedrate planned: %f\n",reader.addout->xpos_set,reader.addout->ypos_set,reader.addout->zpos_set,reader.addout->feedrate);
                         printf("X-Axis at home: %s;              Y-Axis at home: %s;             Z-Axis at home: %s;             Feedrate override: %f\n",reader.addout->xhome ? "true" : "false",reader.addout->yhome ? "true" : "false",reader.addout->zhome ? "true" : "false",reader.addout->feedoverride);
@@ -183,6 +227,8 @@ int main(int argc, char* argv[])
                         printf("Current Line Number: %d;         Uptime: %d;                     Tool Number: %d;                Mode: %d\n",reader.addout->lineno,reader.addout->uptime,reader.addout->tool,reader.addout->mode);
                 }
                 if (reader.flagmainin){
+                        sem_wait(reader.sem_mainin);
+                        sem_post(reader.sem_mainin);
                         printf("\n##### Main Input Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
                         printf("X-Position Current: %f;         Y-Position Current: %f;        Z-Position Current: %f;\n",reader.mainin->xpos_cur,reader.mainin->ypos_cur,reader.mainin->zpos_cur);
                         printf("X-Axis faulty: %s;              Y-Axis faulty: %s;             Z-Axis faulty: %s;\n",reader.mainin->xfault ? "true" : "false",reader.mainin->yfault ? "true" : "false",reader.mainin->zfault ? "true" : "false");
@@ -192,11 +238,11 @@ int main(int argc, char* argv[])
 
         // cleanup
         if (reader.flagmainout)
-                closeShM(MK_MAINOUTKEY);
+                closeShM((void**)&reader.mainout, sizeof(reader.mainout),&reader.sem_mainout);
         if (reader.flagmainin)
-                closeShM(MK_MAININKEY);
+                closeShM((void**)&reader.mainin, sizeof(reader.mainin),&reader.sem_mainin);
         if (reader.flagaddout)
-                closeShM(MK_ADDAOUTKEY);
+                closeShM((void**)&reader.addout, sizeof(reader.addout),&reader.sem_addout);
 
         return 0;
 }

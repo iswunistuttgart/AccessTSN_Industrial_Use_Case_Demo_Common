@@ -11,7 +11,7 @@ CFLAGS=$(INC) -g
 ODIR=obj
 LDIR=../lib
 
-LIBS=-lrt
+LIBS=-lrt -pthread
 
 _OBJ = demoreader.o demowriter.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
