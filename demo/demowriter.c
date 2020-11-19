@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
                         writer.mainout->yvel_set = (double) (rand() * 0.000001);
                         writer.mainout->zvel_set = (double) (rand() * 0.000001);
                         writer.mainout->spindlespeed = (double) (rand() * 0.000001);
-                        printf("X-Velocity Setpoint: %f;        Y-Velocity Setpoint: %f;        Z-Velocity Setpoint: %f;        Spindlespeed Setpoint: %f\n",writer.mainout->xvel_set,writer.mainout->yvel_set,writer.mainout->zvel_set,writer.mainout->spindlespeed);
+                        printf("X-Velocity Setpoint: %f mm/s;        Y-Velocity Setpoint: %f mm/s;        Z-Velocity Setpoint: %f mm/s;        Spindlespeed Setpoint: %f rpm\n",writer.mainout->xvel_set,writer.mainout->yvel_set,writer.mainout->zvel_set,writer.mainout->spindlespeed);
                         writer.mainout->xenable = rand() > randhalf;
                         writer.mainout->yenable = rand() > randhalf;
                         writer.mainout->zenable = rand() > randhalf;
@@ -227,12 +227,12 @@ int main(int argc, char* argv[])
                         writer.addout->ypos_set = (double) (rand() * 0.000001);
                         writer.addout->zpos_set = (double) (rand() * 0.000001);
                         writer.addout->feedrate = (double) (rand() * 0.000001);
-                        printf("X-Position Setpoint: %f;         Y-Position Setpoint: %f;        Z-Position Setpoint: %f;        Feedrate planned: %f\n",writer.addout->xpos_set,writer.addout->ypos_set,writer.addout->zpos_set,writer.addout->feedrate);
+                        printf("X-Position Setpoint: %f mm;         Y-Position Setpoint: %f mm;        Z-Position Setpoint: %f mm;        Feedrate planned: %f mm/s\n",writer.addout->xpos_set,writer.addout->ypos_set,writer.addout->zpos_set,writer.addout->feedrate);
                         writer.addout->xhome = rand() > randhalf;
                         writer.addout->yhome = rand() > randhalf;
                         writer.addout->zhome = rand() > randhalf;
                         writer.addout->feedoverride = (double) (rand() * 0.000001);
-                        printf("X-Axis at home: %s;              Y-Axis at home: %s;             Z-Axis at home: %s;             Feedrate override: %f\n",writer.addout->xhome ? "true" : "false",writer.addout->yhome ? "true" : "false",writer.addout->zhome ? "true" : "false",writer.addout->feedoverride);
+                        printf("X-Axis at home: %s;              Y-Axis at home: %s;             Z-Axis at home: %s;             Feedrate override: %f %%\n",writer.addout->xhome ? "true" : "false",writer.addout->yhome ? "true" : "false",writer.addout->zhome ? "true" : "false",writer.addout->feedoverride);
                         writer.addout->xhardneg = rand() > randhalf;
                         writer.addout->yhardneg = rand() > randhalf;
                         writer.addout->zhardneg = rand() > randhalf;
@@ -242,10 +242,9 @@ int main(int argc, char* argv[])
                         writer.addout->zhardpos = rand() > randhalf;
                         printf("X-Axis at pos Endstop: %s;       Y-Axis at pos Endstop: %s;      Z-Axis at pos Endstop: %s\n",writer.addout->xhardpos ? "true" : "false",writer.addout->yhardpos ? "true" : "false",writer.addout->zhardpos ? "true" : "false");
                         writer.addout->lineno = rand();
-                        writer.addout->uptime = rand();
                         writer.addout->tool = rand ();
                         writer.addout->mode = rand() %4 +1;
-                        printf("Current Line Number: %d;         Uptime: %d;                     Tool Number: %d;                Mode: %d\n",writer.addout->lineno,writer.addout->uptime,writer.addout->tool,writer.addout->mode);
+                        printf("Current Line Number: %d;                                         Tool Number: %d;                Mode: %d\n",writer.addout->lineno,writer.addout->tool,writer.addout->mode);
                         sem_post(writer.sem_addout);
                 }
                 if (writer.flagmainin){
@@ -254,7 +253,7 @@ int main(int argc, char* argv[])
                         writer.mainin->xpos_cur = (double) (rand() * 0.000001);
                         writer.mainin->ypos_cur = (double) (rand() * 0.000001);
                         writer.mainin->zpos_cur = (double) (rand() * 0.000001);
-                        printf("X-Position Current: %f;         Y-Position Current: %f;        Z-Position Current: %f;\n",writer.mainin->xpos_cur,writer.mainin->ypos_cur,writer.mainin->zpos_cur);
+                        printf("X-Position Current: %f mm;         Y-Position Current: %f mm;        Z-Position Current mm: %f;\n",writer.mainin->xpos_cur,writer.mainin->ypos_cur,writer.mainin->zpos_cur);
                         writer.mainin->xfault = rand() > randhalf;
                         writer.mainin->yfault = rand() > randhalf;
                         writer.mainin->zfault = rand() > randhalf;

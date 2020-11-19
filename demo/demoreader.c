@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
                         sem_wait(reader.sem_mainout);
                         sem_post(reader.sem_mainout);
                         printf("\n##### Main Output Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
-                        printf("X-Velocity Setpoint: %f;        Y-Velocity Setpoint: %f;        Z-Velocity Setpoint: %f;        Spindlespeed Setpoint: %f\n",reader.mainout->xvel_set,reader.mainout->yvel_set,reader.mainout->zvel_set,reader.mainout->spindlespeed);
+                        printf("X-Velocity Setpoint: %f mm/s;        Y-Velocity Setpoint: %f mm/s;        Z-Velocity Setpoint: %f mm/s;        Spindlespeed Setpoint: %f rpm\n",reader.mainout->xvel_set,reader.mainout->yvel_set,reader.mainout->zvel_set,reader.mainout->spindlespeed);
                         printf("X-Axis enabled: %s;             Y-Axis enabled: %s;             Z-Axis enabled: %s;             Spindle enabled: %s\n",reader.mainout->xenable ? "true" : "false",reader.mainout->yenable ? "true" : "false",reader.mainout->zenable ? "true" : "false",reader.mainout->spindleenable ? "true" : "false");
                         printf("Spindlebranke engaged: %s;      Machine on: %s;                 Emergency Stop activated: %s\n",reader.mainout->spindlebrake ? "true" : "false",reader.mainout->machinestatus ? "true" : "false",reader.mainout->estopstatus ? "true" : "false");
                 }
@@ -220,17 +220,17 @@ int main(int argc, char* argv[])
                         sem_wait(reader.sem_addout);
                         sem_post(reader.sem_addout);
                         printf("\n##### Additional Output Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
-                        printf("X-Position Setpoint: %f;         Y-Position Setpoint: %f;        Z-Position Setpoint: %f;        Feedrate planned: %f\n",reader.addout->xpos_set,reader.addout->ypos_set,reader.addout->zpos_set,reader.addout->feedrate);
-                        printf("X-Axis at home: %s;              Y-Axis at home: %s;             Z-Axis at home: %s;             Feedrate override: %f\n",reader.addout->xhome ? "true" : "false",reader.addout->yhome ? "true" : "false",reader.addout->zhome ? "true" : "false",reader.addout->feedoverride);
+                        printf("X-Position Setpoint: %f mm;         Y-Position Setpoint: %f mm;        Z-Position Setpoint: %f mm;        Feedrate planned: %f mm/s\n",reader.addout->xpos_set,reader.addout->ypos_set,reader.addout->zpos_set,reader.addout->feedrate);
+                        printf("X-Axis at home: %s;              Y-Axis at home: %s;             Z-Axis at home: %s;             Feedrate override: %f %%\n",reader.addout->xhome ? "true" : "false",reader.addout->yhome ? "true" : "false",reader.addout->zhome ? "true" : "false",reader.addout->feedoverride);
                         printf("X-Axis at neg Endstop: %s;       Y-Axis at neg Endstop: %s;      Z-Axis at neg Endstop: %s\n",reader.addout->xhardneg ? "true" : "false",reader.addout->yhardneg ? "true" : "false",reader.addout->zhardneg ? "true" : "false");
                         printf("X-Axis at pos Endstop: %s;       Y-Axis at pos Endstop: %s;      Z-Axis at pos Endstop: %s\n",reader.addout->xhardpos ? "true" : "false",reader.addout->yhardpos ? "true" : "false",reader.addout->zhardpos ? "true" : "false");
-                        printf("Current Line Number: %d;         Uptime: %d;                     Tool Number: %d;                Mode: %d\n",reader.addout->lineno,reader.addout->uptime,reader.addout->tool,reader.addout->mode);
+                        printf("Current Line Number: %d;                                         Tool Number: %d;                Mode: %d\n",reader.addout->lineno,reader.addout->tool,reader.addout->mode);
                 }
                 if (reader.flagmainin){
                         sem_wait(reader.sem_mainin);
                         sem_post(reader.sem_mainin);
                         printf("\n##### Main Input Variables: (at %02d:%02d:%02d) #####\n", now_local.tm_hour, now_local.tm_min, now_local.tm_sec);
-                        printf("X-Position Current: %f;         Y-Position Current: %f;        Z-Position Current: %f;\n",reader.mainin->xpos_cur,reader.mainin->ypos_cur,reader.mainin->zpos_cur);
+                        printf("X-Position Current: %f mm;         Y-Position Current: %f mm;        Z-Position Current: %f mm;\n",reader.mainin->xpos_cur,reader.mainin->ypos_cur,reader.mainin->zpos_cur);
                         printf("X-Axis faulty: %s;              Y-Axis faulty: %s;             Z-Axis faulty: %s;\n",reader.mainin->xfault ? "true" : "false",reader.mainin->yfault ? "true" : "false",reader.mainin->zfault ? "true" : "false");
                 }
                 usleep(reader.period);
