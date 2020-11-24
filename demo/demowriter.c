@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
         //initialize rand-function
         srand((unsigned) time(&now));
         
-        // mainloop
+	// mainloop
         while(run) {
                 now = time(NULL);
                 now_local = *localtime(&now);
