@@ -24,11 +24,11 @@
 
 /* Shared-Memory-Interface between Machinekit and various other programs
  *
- * This decribes a Shared-Memory-Interface between Machinekit and various other 
+ * This describes a Shared-Memory-Interface between Machinekit and various other 
  * programs, e.g. a TSN-RT-Interface or OPC UA Server, which are used in
  * conjunction to demonstrate a converged network scenario in an industrial
  * environment. This work was done in the context of the AccessTSN project and 
- * is part of the AccessTSN-Demo-Image.
+ * is part of the AccessTSN Industrial Use Case Demo.
  */
 
 #ifndef _MK_SHMINTERFACE_H_

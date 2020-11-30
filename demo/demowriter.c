@@ -4,7 +4,7 @@
  * Author: Philipp Neher <philipp.neher@isw.uni-stuttgart.de>
  */
 
-/* SHM-Demoapplication to create random values and put them into shared memory 
+/* SHM-Demoapplication to create random values and puts them into shared memory 
  * 
  * Usage:
  * -o           Create main output variables from control
