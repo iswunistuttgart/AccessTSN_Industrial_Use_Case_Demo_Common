@@ -17,6 +17,7 @@ _OBJ = demoreader.o demowriter.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.c 
+	@mkdir -p obj
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 all: demoreader demowriter
